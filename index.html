@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Table</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    div {
+      margin-bottom: 10px;
+    }
+
+    input[type="text"] {
+      padding: 5px;
+    }
+
+    button {
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #4caf5b;
+      color: white;
+    }
+
+    .selected {
+      background-color: #ddd;
+    }
+
+    /* Pagination buttons */
+    button.first-page, button.previous-page, button.next-page, button.last-page {
+      padding: 8px;
+      margin-right: 5px;
+      background-color: #1c9e2b;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    span#currentPage {
+      font-weight: bold;
+    }
+
+    /* Delete button */
+    button.delete-icon {
+      padding: 8px;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* Edit button */
+    button.edit {
+      padding: 8px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div>
+    <input type="text" id="searchInput" placeholder="Search" oninput="search()">
+    <button class="search-icon" onclick="search()">Search</button>
+  </div>
+
+  <table id="dataTable">
+    <!-- Table header -->
+    <thead>
+      <tr>
+        <th><input type="checkbox" onclick="selectAll()"></th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <!-- Table body -->
+    <tbody>
+      <!-- Rows will be dynamically added here -->
+    </tbody>
+  </table>
+
+  <div>
+    <!-- Pagination buttons -->
+    <button class="first-page" onclick="gotoPage(1)">First</button>
+    <button class="previous-page" onclick="gotoPage(currentPage - 1)">Previous</button>
+    <span id="currentPage">Page 1</span>
+    <button class="next-page" onclick="gotoPage(currentPage + 1)">Next</button>
+    <button class="last-page" onclick="gotoPage(totalPages)">Last</button>
+  </div>
+
+  <div>
+    <!-- Delete selected button -->
+    <button class="delete-icon" onclick="deleteSelected()">Delete Selected</button>
+  </div>
+
+  <script>
+    const tableData = [
+      // Your data here...
+      { id: 1, name: 'Pooja', email: 'pooja@gmail.com',role:'admin' },
+      { id: 2, name: 'Mahi', email: 'mahi@gmail.com',role:'admin' },
+      { id: 3, name: 'kyle', email: 'kyle@gmail.com' ,role:'member'},
+      { id: 4, name: 'Alex', email: 'alex@gmail.com',role:'member' },
+      { id: 5, name: 'Michale', email: 'michale@gmail.com',role:'member' },
+      { id: 6, name: 'Sony', email: 'sony@gmail.com' ,role:'member'},
+      { id: 7, name: 'Aarona', email: 'aarona@gmail.com',role:'member' },
+      { id: 8, name: 'jhony', email: 'jhony@gmail.com',role:'member' },
+      { id: 9, name: 'Jhon', email: 'jhon@gmail.com' ,role:'member'},
+      { id: 10, name: 'Swecha', email: 'swecha@gmail.com',role:'member' },
+      { id: 11, name: 'Spruthi', email: 'spruthi@gmail.com' ,role:'member'},
+      { id: 12, name: 'Vance', email: 'vance@gmail.com',role:'member' },
+      { id: 13, name: 'Max', email: 'max@gmail.com',role:'member' },
+      { id: 14, name: 'Lucy', email: 'lucy@gmail.com' ,role:'member'},
+      { id: 15, name: 'Appu', email: 'appu@gmail.com',role:'admin' },
+      { id: 16, name: 'Laxmi', email: 'laxmi@gmail.com',role:'admin' },
+      { id: 17, name: 'Sneha', email: 'sneha@gmail.com' ,role:'member'},
+      { id: 18, name: 'Navya', email: 'navyagmail.com' ,role:'member'},
+      { id: 19, name: 'Divya', email: 'divya@gmail.com',role:'member' },
+      { id: 20, name: 'Sai', email: 'sai@gmail.com',role:'member' },
+      { id: 21, name: 'Sweety', email: 'sweety@gmail.com' ,role:'member'},
+      { id: 22, name: 'Mani', email: 'mani@gmail.com',role:'admin' },
+      { id: 23, name: 'Ninni', email: 'ninni@gmail.com' ,role:'member'},
+      { id: 24, name: 'Olivia', email: 'olivia@gmail.com',role:'member' },
+      { id: 25, name: 'Steve', email: 'steve@gmail.com',role:'admin'},
+      { id: 26, name: 'Abdul', email: 'abdul@gmail.com',role:'member' },
+      { id: 27, name: 'Sadi', email: 'sadi@gmail.com' ,role:'member'},
+      { id: 28, name: 'Nancy', email: 'nancy@gmail.com',role:'member' },
+      { id: 29, name: 'Ram', email: 'ram@gmail.com',role:'admin' },
+      { id: 30, name: 'Mohan', email: 'mohan@gmail.com',role:'member' },
+    ];
+
+    const pageSize = 10;
+    let currentPage = 1;
+    let totalPages = Math.ceil(tableData.length / pageSize);
+    let selectedRows = [];
+    let currentData = [...tableData];
+
+    // Initial load
+    renderTable();
+
+    function renderTable(data = currentData) {
+      const dataTable = document.getElementById('dataTable');
+      const startIdx = (currentPage - 1) * pageSize;
+      const endIdx = startIdx + pageSize;
+
+      // Clear table body
+      dataTable.querySelector('tbody').innerHTML = '';
+
+      // Render rows based on the current page
+      for (let i = startIdx; i < endIdx && i < data.length; i++) {
+        const row = document.createElement('tr');
+        const rowData = data[i];
+
+        // Add checkbox for selection
+        const checkboxCell = document.createElement('td');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = selectedRows.includes(rowData.id);
+        checkbox.addEventListener('change', () => toggleRowSelection(rowData.id));
+        checkboxCell.appendChild(checkbox);
+        row.appendChild(checkboxCell);
+
+        // Add data cells
+        Object.keys(rowData).forEach(key => {
+          const cell = document.createElement('td');
+          cell.textContent = rowData[key];
+          row.appendChild(cell);
+        });
+
+        // Add action buttons
+        const actionCell = document.createElement('td');
+
+        // Edit button
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.classList.add('edit');
+        editButton.addEventListener('click', () => editRow(rowData.id));
+        actionCell.appendChild(editButton);
+
+        // Delete button
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.classList.add('delete-icon');
+        deleteButton.addEventListener('click', () => deleteRow(rowData.id));
+        actionCell.appendChild(deleteButton);
+
+        // Append the row to the table body
+        row.appendChild(actionCell);
+        dataTable.querySelector('tbody').appendChild(row);
+      }
+
+      // Update pagination information
+      document.getElementById('currentPage').textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    function search() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+      // Filter data based on the search term
+      currentData = tableData.filter(item =>
+        Object.values(item).some(value => value.toString().toLowerCase().includes(searchTerm))
+      );
+
+      // Update pagination based on filtered data
+      totalPages = Math.ceil(currentData.length / pageSize);
+      currentPage = 1;
+
+      // Render the table with filtered data
+      renderTable();
+    }
+
+    function gotoPage(page) {
+      currentPage = Math.min(Math.max(page, 1), totalPages);
+      renderTable();
+    }
+
+    function selectAll() {
+      const checkboxes = document.querySelectorAll('#dataTable tbody input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = !checkbox.checked;
+        toggleRowSelection(parseInt(checkbox.parentNode.parentNode.cells[1].textContent));
+      });
+    }
+
+    function toggleRowSelection(rowId) {
+      if (selectedRows.includes(rowId)) {
+        selectedRows = selectedRows.filter(id => id !== rowId);
+      } else {
+        selectedRows.push(rowId);
+      }
+    }
+
+    function deleteSelected() {
+      currentData = currentData.filter(item => !selectedRows.includes(item.id));
+      selectedRows = [];
+      totalPages = Math.ceil(currentData.length / pageSize);
+      currentPage = Math.min(currentPage, totalPages);
+      renderTable();
+    }
+
+    function editRow(rowId) {
+      // Implement your logic to enable editing of the row with the given ID
+      console.log(`Editing row with ID ${rowId}`);
+      const rowToUpdate = currentData.find(item => item.id === rowId);
+      if (rowToUpdate) {
+        // Example: Prompt for a new name
+        const newName = prompt('Enter the new name:', rowToUpdate.name);
+        if (newName !== null) {
+          // Update the data and re-render the table
+          rowToUpdate.name = newName;
+          renderTable();
+        }
+      }
+    }
+
+    function deleteRow(rowId) {
+      // Implement your logic to delete the row with the given ID
+      console.log(`Deleting row with ID ${rowId}`);
+      currentData = currentData.filter(item => item.id !== rowId);
+      renderTable();
+    }
+  </script>
+
+</body>
+</html>
